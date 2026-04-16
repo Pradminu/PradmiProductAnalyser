@@ -164,11 +164,104 @@ _GENERIC_PROS = [
 ]
 
 _GENERIC_CONS = [
-    "May contain preservatives — check label",
+    "May contain preservatives or additives — check label",
     "Packaging may not be eco-friendly",
-    "Individual results or taste may vary",
+    "Individual results may vary",
     "Not ideal for all age groups without guidance",
 ]
+
+# Well-known Indian brands mapped to keywords in product names
+_BRAND_MAP = {
+    "santoor": "Wipro",
+    "dettol": "Reckitt Benckiser",
+    "lifebuoy": "HUL",
+    "dove": "HUL",
+    "pears": "HUL",
+    "lux": "HUL",
+    "hamam": "HUL",
+    "cinthol": "Godrej",
+    "godrej": "Godrej",
+    "himalaya": "Himalaya Drug Company",
+    "patanjali": "Patanjali Ayurved",
+    "dabur": "Dabur India",
+    "colgate": "Colgate-Palmolive",
+    "pepsodent": "HUL",
+    "closeup": "HUL",
+    "head & shoulders": "P&G",
+    "pantene": "P&G",
+    "rejoice": "P&G",
+    "clinic plus": "HUL",
+    "sunsilk": "HUL",
+    "tresemme": "HUL",
+    "maggi": "Nestle",
+    "kitkat": "Nestle",
+    "munch": "Nestle",
+    "parle": "Parle Products",
+    "britannia": "Britannia Industries",
+    "amul": "AMUL",
+    "mother dairy": "Mother Dairy",
+    "maaza": "Coca-Cola India",
+    "limca": "Coca-Cola India",
+    "thums up": "Coca-Cola India",
+    "pepsi": "PepsiCo",
+    "lays": "PepsiCo",
+    "kurkure": "PepsiCo",
+    "haldirams": "Haldiram's",
+    "bikaji": "Bikaji Foods",
+    "bournvita": "Mondelez",
+    "horlicks": "HUL",
+    "boost": "HUL",
+    "complan": "Kraft Heinz",
+    "fair & lovely": "HUL",
+    "nivea": "Beiersdorf",
+    "ponds": "HUL",
+    "lakme": "HUL",
+    "garnier": "L'Oreal",
+    "loreal": "L'Oreal",
+    "vaseline": "HUL",
+    "boroline": "G.D. Pharmaceuticals",
+    "vicks": "P&G",
+    "tiger balm": "Haw Par Corporation",
+    "iodex": "GSK",
+    "moov": "Reckitt",
+    "volini": "Sanofi",
+}
+
+# Category detection from product name keywords
+_CATEGORY_MAP = {
+    "soap": "Beauty & Personal Care / Soap",
+    "shampoo": "Beauty & Personal Care / Shampoo",
+    "conditioner": "Beauty & Personal Care / Hair Care",
+    "face wash": "Beauty & Personal Care / Face Care",
+    "moisturizer": "Beauty & Personal Care / Skin Care",
+    "cream": "Beauty & Personal Care / Skin Care",
+    "lotion": "Beauty & Personal Care / Skin Care",
+    "sunscreen": "Beauty & Personal Care / Skin Care",
+    "toothpaste": "Personal Care / Oral Hygiene",
+    "toothbrush": "Personal Care / Oral Hygiene",
+    "deodorant": "Personal Care / Deodorant",
+    "perfume": "Personal Care / Fragrance",
+    "noodles": "Food & Beverages / Instant Food",
+    "biscuit": "Food & Beverages / Snacks",
+    "chocolate": "Food & Beverages / Confectionery",
+    "chips": "Food & Beverages / Snacks",
+    "juice": "Food & Beverages / Beverages",
+    "milk": "Food & Beverages / Dairy",
+    "oil": "Food & Beverages / Cooking Oil",
+    "rice": "Food & Beverages / Staples",
+    "dal": "Food & Beverages / Staples",
+    "atta": "Food & Beverages / Staples",
+    "tablet": "Health & Medicine",
+    "capsule": "Health & Medicine",
+    "syrup": "Health & Medicine",
+    "supplement": "Health & Nutrition",
+    "protein": "Health & Nutrition / Supplements",
+    "vitamin": "Health & Nutrition / Vitamins",
+    "phone": "Electronics / Mobile",
+    "laptop": "Electronics / Computers",
+    "earphone": "Electronics / Audio",
+    "charger": "Electronics / Accessories",
+}
 
 
 def generate_pros_cons(product_data: dict) -> tuple[list, list]:
@@ -478,6 +571,21 @@ def build_full_report(product_data: dict, reviews: list[str], amazon_data: dict 
     """
     Combine all analysis functions into one report dict consumed by app.py.
     """
+    # --- Auto-detect brand from name if unknown ---
+    name_lower = (product_data.get("name") or "").lower()
+    if not product_data.get("brand") or product_data.get("brand", "").lower() in ("unknown", ""):
+        for keyword, brand_name in _BRAND_MAP.items():
+            if keyword in name_lower:
+                product_data["brand"] = brand_name
+                break
+
+    # --- Auto-detect category from name if generic ---
+    if not product_data.get("category") or product_data.get("category", "").lower() in ("general", ""):
+        for keyword, cat_name in _CATEGORY_MAP.items():
+            if keyword in name_lower:
+                product_data["category"] = cat_name
+                break
+
     sentiment = analyse_sentiment(reviews)
     pros, cons = generate_pros_cons(product_data)
     warnings = generate_health_warnings(product_data)
