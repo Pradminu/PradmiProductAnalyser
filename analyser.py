@@ -93,20 +93,20 @@ def analyse_nutrition(nutrition: dict) -> tuple[list, list, list]:
     if sugar > 20:
         cons.append(f"High sugar content ({sugar:.1f} g / 100 g)")
         warnings.append("Not suitable for diabetics or blood-sugar management")
-    elif sugar < 5 and sugar >= 0:
+    elif 0 < sugar < 5:
         pros.append("Low sugar — suitable for diabetics")
 
     # ---- Calories ----
     if calories > 400:
         cons.append(f"High calorie ({calories:.0f} kcal / 100 g)")
         warnings.append("Consume in moderation if managing weight")
-    elif calories < 100 and calories > 0:
+    elif 0 < calories < 100:
         pros.append(f"Low calorie ({calories:.0f} kcal) — good for weight management")
 
     # ---- Fat ----
     if fat > 20:
         cons.append(f"High total fat ({fat:.1f} g / 100 g)")
-    elif fat < 3 and fat >= 0:
+    elif 0 < fat < 3:
         pros.append("Very low fat content")
 
     if sat_fat > 10:
@@ -297,7 +297,7 @@ _USAGE_MAP = {
         "best_time": "Any time of day",
         "storage": "Cool, dry place — refrigerate after opening if instructed",
     },
-    ("beauty", "cosmetic", "skin", "hair", "cream", "lotion", "shampoo", "face"): {
+    ("beauty", "cosmetic", "skin", "hair", "cream", "lotion", "shampoo", "face", "soap", "body wash", "cleanser"): {
         "instructions": [
             "Cleanse skin / hair before application",
             "Perform a patch test 24 h before first use",
@@ -489,11 +489,14 @@ def build_full_report(product_data: dict, reviews: list[str], amazon_data: dict 
     alternatives = get_alternatives(product_data)
     buy_locations = get_buy_locations(product_data)
 
-    # What-is-this description: prefer scraped description, fall back to generic
+    # What-is-this description: prefer scraped description, fall back to smart generic
+    name = product_data.get("name") or "This product"
+    brand = product_data.get("brand") or ""
+    brand_str = f"by {brand} " if brand and brand.lower() not in ("unknown", "") else ""
+    cat_raw = (product_data.get("category") or "consumer product").split(",")[0].strip()
     description = product_data.get("description") or (
-        f"{product_data.get('name', 'This product')} by {product_data.get('brand', 'an established brand')} "
-        f"is a {product_data.get('category', 'consumer').split(',')[0].strip()} product "
-        f"available across major retail and online channels in India."
+        f"{name} {brand_str}is a popular {cat_raw} used daily across households in India. "
+        f"It is widely available in supermarkets, pharmacies, and online platforms like Amazon and Flipkart."
     )
 
     # Why-use benefits list (5 items from pros + usage)
