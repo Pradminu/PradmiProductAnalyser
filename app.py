@@ -12,6 +12,7 @@ import fetcher
 import scraper
 import analyser
 import utils
+import knowledge_base
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -95,12 +96,27 @@ def run_analysis(product_name: str = "", url: str = "", barcode: str = "") -> di
     """
     product_data = None
 
-    # 1. Open Food Facts
+    # 1. Knowledge base first (instant, always works)
+    if product_name:
+        product_data = knowledge_base.lookup(product_name)
+
+    # 2. Open Food Facts (richer nutrition data)
     with st.spinner("Searching product database…"):
         if barcode:
-            product_data = fetcher.fetch_by_barcode(barcode)
+            off_data = fetcher.fetch_by_barcode(barcode)
+            if off_data:
+                product_data = off_data
         if not product_data and product_name:
-            product_data = fetcher.fetch_by_name(product_name)
+            off_data = fetcher.fetch_by_name(product_name)
+            if off_data:
+                # Merge: keep KB description/reviews but use OFF nutrition
+                if product_data and off_data.get("nutrition"):
+                    product_data["nutrition"] = off_data["nutrition"]
+                    product_data["ingredients"] = off_data.get("ingredients") or product_data.get("ingredients", "")
+                    product_data["nutriscore"]  = off_data.get("nutriscore")  or product_data.get("nutriscore", "")
+                    product_data["image_url"]   = off_data.get("image_url")   or product_data.get("image_url", "")
+                else:
+                    product_data = off_data
 
     # 2. URL scrape (merges into product_data)
     if url:
@@ -153,10 +169,20 @@ def run_analysis(product_name: str = "", url: str = "", barcode: str = "") -> di
     with st.spinner("Checking Amazon India for price & rating…"):
         search_name = product_data.get("name") or product_name
         amazon_data = scraper.scrape_amazon(search_name)
+        # Use KB price/rating if Amazon scraping is blocked
+        if not amazon_data and product_data.get("price_range"):
+            amazon_data = {
+                "price": product_data.get("price_range", "N/A"),
+                "rating": product_data.get("kb_rating", ""),
+                "title": product_data.get("name", ""),
+                "url": "",
+            }
 
-    # 5. Reviews (Google snippets)
+    # 5. Reviews — Google scrape, fallback to knowledge base
     with st.spinner("Gathering review data…"):
         reviews = scraper.get_google_reviews(product_data.get("name") or product_name)
+        if not reviews and product_data.get("kb_reviews"):
+            reviews = product_data.get("kb_reviews", [])
 
     # 6. Build full report
     with st.spinner("Analysing product…"):
