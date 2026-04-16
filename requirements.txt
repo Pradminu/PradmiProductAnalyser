@@ -19,7 +19,7 @@ Pillow>=10.0.0
 pandas>=2.0.0
 
 # PDF report generation
-fpdf2>=2.7.0
+fpdf2==2.7.9
 
 # ---------------------------------------------------------------------------
 # Optional — install separately if you need barcode/OCR features
