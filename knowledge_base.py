@@ -265,12 +265,14 @@ def lookup(product_name: str) -> dict | None:
     """
     Return built-in product data if the name matches any entry.
     Case-insensitive, partial match supported.
+    Longer (more specific) keys are checked first to avoid "himalaya"
+    matching before "himalaya face wash".
     """
     name_lower = product_name.lower().strip()
-    # Exact / startswith match first
-    for key, data in PRODUCTS.items():
+    # Sort by key length descending — most specific key wins
+    for key in sorted(PRODUCTS.keys(), key=len, reverse=True):
         if key in name_lower or name_lower in key:
-            return _to_product_data(data)
+            return _to_product_data(PRODUCTS[key])
     return None
 
 
