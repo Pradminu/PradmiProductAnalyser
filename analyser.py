@@ -225,6 +225,39 @@ _BRAND_MAP = {
     "iodex": "GSK",
     "moov": "Reckitt",
     "volini": "Sanofi",
+    "mamaearth": "Honasa Consumer",
+    "wow": "WOW Skin Science",
+    "mcaffeine": "mCaffeine",
+    "plum": "Plum Goodness",
+    "minimalist": "The Minimalist",
+    "dot & key": "Dot & Key",
+    "pilgrim": "Pilgrim",
+    "biotique": "Biotique",
+    "lakme": "HUL",
+    "lotus": "Lotus Herbals",
+    "vlcc": "VLCC",
+    "khadi": "Khadi Natural",
+    "forest essentials": "Forest Essentials",
+    "kama ayurveda": "Kama Ayurveda",
+    "fiama": "ITC",
+    "engage": "ITC",
+    "wild stone": "McNroe Consumer Products",
+    "fogg": "Vini Cosmetics",
+    "axe": "HUL",
+    "old spice": "P&G",
+    "gillette": "P&G",
+    "harpic": "Reckitt",
+    "lizol": "Reckitt",
+    "surf excel": "HUL",
+    "ariel": "P&G",
+    "tide": "P&G",
+    "rin": "HUL",
+    "vim": "HUL",
+    "pril": "Henkel",
+    "magic": "HUL",
+    "good knight": "Godrej",
+    "hit": "Godrej",
+    "mortein": "Reckitt",
 }
 
 # Category detection from product name keywords
@@ -319,10 +352,25 @@ def generate_pros_cons(product_data: dict) -> tuple[list, list]:
 def generate_health_warnings(product_data: dict) -> list[str]:
     """Aggregate all health and allergen warnings for the product."""
     warnings = []
+    name     = (product_data.get("name")     or "").lower()
+    category = (product_data.get("category") or "").lower()
+    combined = name + " " + category
 
-    n_warnings, _, _ = analyse_nutrition(product_data.get("nutrition", {}))
-    warnings.extend(n_warnings)
+    is_food = any(k in combined for k in ("food", "beverage", "noodle", "biscuit",
+                                           "snack", "dairy", "chocolate", "oil",
+                                           "rice", "dal", "atta", "juice", "milk",
+                                           "butter", "instant"))
+    is_beauty = any(k in combined for k in ("soap", "shampoo", "face", "skin",
+                                             "cream", "lotion", "hair", "beauty",
+                                             "cosmetic", "cleanser", "body wash",
+                                             "personal care"))
 
+    # Nutrition-based warnings only for food products
+    if is_food:
+        n_warnings, _, _ = analyse_nutrition(product_data.get("nutrition", {}))
+        warnings.extend(n_warnings)
+
+    # Allergen warnings
     allergens = product_data.get("allergens") or []
     if isinstance(allergens, str):
         allergens = [a.strip() for a in allergens.replace("en:", "").split(",") if a.strip()]
@@ -333,9 +381,20 @@ def generate_health_warnings(product_data: dict) -> list[str]:
 
     ingredients = (product_data.get("ingredients") or "").lower()
     if "artificial" in ingredients:
-        warnings.append("Contains artificial additives — may not suit sensitive individuals")
+        if is_food:
+            warnings.append("Contains artificial additives — may not suit sensitive individuals")
+        else:
+            warnings.append("Contains synthetic ingredients — patch test recommended")
     if "preservative" in ingredients:
-        warnings.append("Contains preservatives — consume within shelf life")
+        if is_food:
+            warnings.append("Contains preservatives — consume within shelf life")
+        else:
+            warnings.append("Contains preservatives — check expiry before use")
+
+    # Beauty-specific warnings
+    if is_beauty:
+        warnings.append("For external use only — avoid contact with eyes")
+        warnings.append("Discontinue use if irritation, redness or rash occurs")
 
     if not warnings:
         warnings.append("No major health warnings identified for this product")
@@ -453,24 +512,47 @@ def get_target_audience(product_data: dict) -> list[str]:
     category = (product_data.get("category") or "").lower()
     nutrition = product_data.get("nutrition", {})
     labels = (product_data.get("labels") or "").lower()
+    combined = name + " " + category
 
     audiences = []
+    is_food = any(k in combined for k in ("food", "beverage", "noodle", "biscuit",
+                                          "snack", "dairy", "chocolate", "oil",
+                                          "rice", "dal", "atta", "juice", "milk"))
+    is_beauty = any(k in combined for k in ("soap", "shampoo", "face", "skin",
+                                             "cream", "lotion", "hair", "beauty",
+                                             "cosmetic", "cleanser", "body wash"))
 
-    if float(nutrition.get("protein") or 0) > 15:
-        audiences.append("Athletes and fitness enthusiasts")
-    if float(nutrition.get("sugar") or 0) < 5:
-        audiences.append("Diabetics and sugar-conscious individuals")
+    # Food-specific nutrition-based audiences
+    if is_food:
+        if float(nutrition.get("protein") or 0) > 15:
+            audiences.append("Athletes and fitness enthusiasts")
+        if 0 < float(nutrition.get("sugar") or 0) < 5:
+            audiences.append("Diabetics and sugar-conscious individuals")
+
+    # Beauty / personal care audiences
+    if is_beauty:
+        if "anti dandruff" in name or "dandruff" in name:
+            audiences.append("People with dandruff or itchy scalp")
+        elif "shampoo" in name or "hair" in combined:
+            audiences.append("All hair types — especially those with hair fall concerns")
+        if "face" in combined or "skin" in combined:
+            audiences.append("Teens and adults with oily / combination skin")
+        if "moistur" in name or "dry" in name:
+            audiences.append("People with dry or sensitive skin")
+
+    # Universal signals
     if "baby" in name or "infant" in category:
         audiences.append("Infants / toddlers (consult paediatrician)")
     if "senior" in name or "elder" in name:
         audiences.append("Senior citizens")
-    if "organic" in labels or "natural" in name:
-        audiences.append("Health-conscious consumers preferring natural products")
+    if "organic" in labels or "natural" in name or "herbal" in name:
+        audiences.append("Health-conscious users preferring natural / herbal products")
     if "vegan" in labels:
         audiences.append("Vegan and plant-based lifestyle followers")
 
     if not audiences:
-        audiences = ["General adults (18+)", "Families and households"]
+        audiences = ["General adults (18+)", "Families and households",
+                     "Daily personal care users"]
 
     return audiences[:4]
 
