@@ -1,0 +1,34 @@
+# Product Analyser — Python dependencies
+# Install with:  pip install -r requirements.txt
+
+# Core web framework
+streamlit>=1.32.0
+
+# HTTP requests + HTML parsing
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Sentiment analysis (no API key needed)
+vaderSentiment>=3.3.2
+
+# Image handling
+Pillow>=10.0.0
+
+# Data tables
+pandas>=2.0.0
+
+# PDF report generation
+fpdf2>=2.7.0
+
+# ---------------------------------------------------------------------------
+# Optional — install separately if you need barcode/OCR features
+# ---------------------------------------------------------------------------
+
+# Barcode scanning from images
+# Windows: also requires zbar DLL — download from https://github.com/NaturalHistoryMuseum/pyzbar#installation
+# pip install pyzbar
+
+# OCR text extraction from product photos
+# Also requires Tesseract binary: https://github.com/UB-Mannheim/tesseract/wiki
+# pip install pytesseract
