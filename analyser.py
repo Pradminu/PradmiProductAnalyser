@@ -493,10 +493,85 @@ _DEFAULT_USAGE = {
 }
 
 
+_SPECIFIC_USAGE = {
+    "face wash": {
+        "instructions": [
+            "Wet your face with lukewarm water",
+            "Take a small amount on your palm and lather",
+            "Gently massage onto face in circular motions for 30–60 seconds",
+            "Rinse thoroughly with water and pat dry",
+        ],
+        "frequency": "Twice daily — morning and night",
+        "best_time": "Morning and before bedtime",
+        "storage": "Store below 30 °C, away from direct sunlight",
+    },
+    "shampoo": {
+        "instructions": [
+            "Wet hair thoroughly with water",
+            "Apply a coin-sized amount and massage into scalp",
+            "Work lather through hair lengths and rinse well",
+            "Repeat if needed; follow with conditioner",
+        ],
+        "frequency": "2–3 times per week (or as needed)",
+        "best_time": "During bath / shower",
+        "storage": "Store upright below 30 °C",
+    },
+    "soap": {
+        "instructions": [
+            "Wet the soap and your hands / body with water",
+            "Lather well and apply to skin",
+            "Rinse thoroughly to remove all soap residue",
+            "Pat skin dry with a clean towel",
+        ],
+        "frequency": "Daily or as needed",
+        "best_time": "Morning and / or evening bath",
+        "storage": "Keep in a dry soap dish away from water",
+    },
+    "noodles": {
+        "instructions": [
+            "Boil 2 cups of water in a pan",
+            "Add noodles and cook for 2 minutes",
+            "Drain water (optional) and add the tastemaker",
+            "Stir well and serve hot",
+        ],
+        "frequency": "Occasional snack — not for daily meals",
+        "best_time": "Snack time or quick meal",
+        "storage": "Store in a cool, dry place in original packaging",
+    },
+    "toothpaste": {
+        "instructions": [
+            "Apply a pea-sized amount onto a soft toothbrush",
+            "Brush teeth in gentle circular motions for 2 minutes",
+            "Spit out — do not swallow",
+            "Rinse mouth with water",
+        ],
+        "frequency": "Twice daily — morning and night",
+        "best_time": "After meals and before bedtime",
+        "storage": "Cap tightly after use, store at room temperature",
+    },
+    "butter": {
+        "instructions": [
+            "Remove from refrigerator and allow to soften slightly",
+            "Spread on bread, paratha, or use in cooking",
+            "Refrigerate unused portion promptly",
+        ],
+        "frequency": "As required in cooking / spreading",
+        "best_time": "Any time of day",
+        "storage": "Refrigerate at 2–4 °C; use within best-before date",
+    },
+}
+
+
 def get_usage_info(product_data: dict) -> dict:
     category = (product_data.get("category") or "").lower()
     name = (product_data.get("name") or "").lower()
     combined = category + " " + name
+
+    # Check specific product types first (most specific wins)
+    for specific_key, info in _SPECIFIC_USAGE.items():
+        if specific_key in combined:
+            return info
+
     for keywords, info in _USAGE_MAP.items():
         if any(k in combined for k in keywords):
             return info
